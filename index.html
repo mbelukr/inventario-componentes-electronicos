@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Inventario de componentes</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔧</text></svg>">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f7f9;--card:#fff;--tx:#1d2330;--mut:#667085;--bd:#dfe3ea;--ac:#0f766e;--acx:#fff;--warn:#b45309;--warnbg:#fef3c7;--bad:#b91c1c;--badbg:#fee2e2}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161d;--card:#1b212b;--tx:#e8ebf0;--mut:#9aa4b2;--bd:#2c3441;--ac:#2dd4bf;--acx:#06201c;--warn:#fbbf24;--warnbg:#3a2e0a;--bad:#f87171;--badbg:#3b1414}}
+:root[data-theme="dark"]{--bg:#12161d;--card:#1b212b;--tx:#e8ebf0;--mut:#9aa4b2;--bd:#2c3441;--ac:#2dd4bf;--acx:#06201c;--warn:#fbbf24;--warnbg:#3a2e0a;--bad:#f87171;--badbg:#3b1414}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:960px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 14px;font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-size:22px}.stat span{color:var(--mut);font-size:12px}
+.bar,form{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+input,select,button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+input[type=number]{width:84px}
+.grow{flex:1;min-width:140px}
+button{cursor:pointer}
+button.pri{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:600}
+button.out{color:var(--bad)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:14px}
+.card h2{font-size:15px;margin:0 0 8px}
+.wrap{overflow-x:auto;background:var(--card);border:1px solid var(--bd);border-radius:10px}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:middle}
+th{font-size:12px;color:var(--mut);font-weight:600}
+tr:last-child td{border-bottom:0}
+.q{font-size:18px;font-weight:700}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px;background:var(--bd);color:var(--mut)}
+.low{background:var(--warnbg);color:var(--warn)}.zero{background:var(--badbg);color:var(--bad)}
+.act{display:flex;gap:6px;align-items:center}
+.act input{width:64px;padding:6px}
+.min{width:64px;padding:6px}
+.empty{padding:24px;text-align:center;color:var(--mut)}
+#note{font-size:12px;color:var(--mut);margin-top:10px}
+</style>
+</head>
+<body>
+<main>
+<h1>Inventario de componentes</h1>
+<p class="sub" id="status">Conectando…</p>
+
+<div class="stats">
+<div class="stat"><b id="sTipos">0</b><span>Tipos de ítems</span></div>
+<div class="stat"><b id="sUni">0</b><span>Unidades totales</span></div>
+<div class="stat"><b id="sBajo">0</b><span>Stock bajo</span></div>
+<div class="stat"><b id="sCero">0</b><span>Agotados</span></div>
+</div>
+
+<div class="card">
+<h2>Nuevo componente</h2>
+<form id="addForm">
+<input class="grow" id="nName" placeholder="Nombre (ej. Resistencia 10k)" required>
+<input id="nCat" list="cats" placeholder="Categoría" style="width:150px">
+<input id="nQty" type="number" min="0" value="1" title="Cantidad inicial">
+<input id="nMin" type="number" min="0" value="0" title="Stock mínimo (alerta)">
+<button class="pri" type="submit">Agregar ítem</button>
+</form>
+<datalist id="cats"></datalist>
+</div>
+
+<div class="bar">
+<input class="grow" id="q" placeholder="Buscar…">
+<select id="fCat"><option value="">Todas las categorías</option></select>
+<label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="fLow"> Solo bajo stock</label>
+<button id="btnSeed" title="Carga los componentes de tus carritos">Cargar lista de mis carritos</button>
+<button id="btnCsv">Exportar CSV</button>
+<button id="btnJson" title="Copia de seguridad completa">Exportar respaldo (JSON)</button>
+<button id="btnImp">Importar respaldo</button>
+<input type="file" id="fileImp" accept=".json,application/json" hidden>
+</div>
+
+<div class="wrap"><table>
+<thead><tr><th>Componente</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Movimiento</th><th></th></tr></thead>
+<tbody id="rows"></tbody>
+</table></div>
+<p id="note"></p>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let items=[],pendingDel=null;
+const LS="inv-componentes-v1";
+
+const SEED=[
+["ESP32 38 pines (Candy Ho)","Microcontroladores",1],["NodeMCU ESP32 (Mercado Libre)","Microcontroladores",1],
+["ESP32-C3 SuperMini","Microcontroladores",1],["Arduino Nano V3.0 ATmega328","Microcontroladores",2],
+["Micrófono INMP441 I2S","Audio",1],["Micrófono GY-MAX4466 analógico","Audio",1],
+["Amplificador MAX98357 I2S 3 W","Audio",1],["Parlante 8 Ω 0.5 W 40x4","Audio",1],["Parlante 29 mm (lote x2)","Audio",2],
+["Display OLED 1.3\" 128x64","Display",1],
+["Diodos (kit 100)","Pasivos / discretos",100],["Transistores NPN (kit 2 x 180)","Pasivos / discretos",360],
+["Resistencias metal film (kit 300)","Pasivos / discretos",300],["Capacitores cerámicos (kit 250)","Pasivos / discretos",250],
+["Capacitores electrolíticos (kit 2 x 120)","Pasivos / discretos",240],
+["Termocontraíble (kit 127)","Insumos y herramientas",127],["Alicate de precisión","Insumos y herramientas",1],["Cinta doble faz 5 mm","Insumos y herramientas",1]
+];
+
+const uid=()=>"i"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+function persistLocal(){try{localStorage.setItem(LS,JSON.stringify(items))}catch(e){}}
+function loadLocal(){try{items=JSON.parse(localStorage.getItem(LS)||"[]")}catch(e){items=[]}}
+
+function save(it){const i=items.findIndex(x=>x.id===it.id);if(i<0)items.push(it);else items[i]=it;persistLocal();render()}
+function remove(id){items=items.filter(x=>x.id!==id);persistLocal();render()}
+
+function render(){
+  const q=$("q").value.trim().toLowerCase(),fc=$("fCat").value,fl=$("fLow").checked;
+  const cats=[...new Set(items.map(i=>i.cat).filter(Boolean))].sort();
+  $("cats").innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join("");
+  const cur=$("fCat").value;
+  $("fCat").innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option ${c===cur?"selected":""} value="${esc(c)}">${esc(c)}</option>`).join("");
+  $("sTipos").textContent=items.length;
+  $("sUni").textContent=items.reduce((a,i)=>a+i.qty,0).toLocaleString("es-AR");
+  $("sBajo").textContent=items.filter(i=>i.qty>0&&i.qty<=i.min).length;
+  $("sCero").textContent=items.filter(i=>i.qty===0).length;
+  const list=items.filter(i=>(!q||(i.name+" "+i.cat).toLowerCase().includes(q))&&(!fc||i.cat===fc)&&(!fl||i.qty<=i.min))
+    .sort((a,b)=>(a.cat||"").localeCompare(b.cat||"")||a.name.localeCompare(b.name));
+  $("rows").innerHTML=list.length?list.map(i=>{
+    const tag=i.qty===0?'<span class="tag zero">Agotado</span>':i.qty<=i.min?'<span class="tag low">Stock bajo</span>':"";
+    return `<tr data-id="${esc(i.id)}"><td>${esc(i.name)} ${tag}</td><td><span class="tag">${esc(i.cat||"—")}</span></td>
+    <td class="q">${i.qty.toLocaleString("es-AR")}</td>
+    <td><input class="min" type="number" min="0" value="${i.min}" data-a="min"></td>
+    <td><div class="act"><input type="number" min="1" value="1" data-n><button data-a="use">− Consumir</button><button data-a="add" class="pri">+ Agregar</button></div></td>
+    <td><button data-a="del" class="out">${pendingDel===i.id?"¿Seguro?":"Borrar"}</button></td></tr>`}).join("")
+    :`<tr><td colspan="6" class="empty">${items.length?"Sin resultados.":"Todavía no hay componentes. Agregá uno arriba o cargá la lista de tus carritos."}</td></tr>`;
+}
+
+$("rows").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  const tr=b.closest("tr"),it=items.find(x=>x.id===tr.dataset.id);if(!it)return;
+  const a=b.dataset.a,n=Math.max(1,parseInt(tr.querySelector("[data-n]")?.value)||1);
+  if(a==="use"){if(n>it.qty){$("note").textContent=`No alcanza: "${it.name}" tiene ${it.qty} y querés consumir ${n}.`;return}
+    $("note").textContent="";save({...it,qty:it.qty-n})}
+  if(a==="add"){$("note").textContent="";save({...it,qty:it.qty+n})}
+  if(a==="del"){if(pendingDel===it.id){pendingDel=null;remove(it.id)}else{pendingDel=it.id;render()}}
+});
+$("rows").addEventListener("change",e=>{
+  if(e.target.dataset.a!=="min")return;
+  const it=items.find(x=>x.id===e.target.closest("tr").dataset.id);
+  if(it)save({...it,min:Math.max(0,parseInt(e.target.value)||0)});
+});
+$("addForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  save({id:uid(),name:$("nName").value.trim(),cat:$("nCat").value.trim(),qty:Math.max(0,parseInt($("nQty").value)||0),min:Math.max(0,parseInt($("nMin").value)||0)});
+  $("nName").value="";$("nQty").value=1;$("nName").focus();
+});
+$("btnSeed").addEventListener("click",()=>{
+  const have=new Set(items.map(i=>i.name.toLowerCase()));
+  SEED.filter(s=>!have.has(s[0].toLowerCase())).forEach(s=>save({id:uid(),name:s[0],cat:s[1],qty:s[2],min:0}));
+  $("note").textContent="Lista cargada con las cantidades de los carritos. Ajustá lo que realmente compraste.";
+});
+function dl(name,type,text){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$("btnCsv").addEventListener("click",()=>{
+  const csv="\ufeffComponente,Categoría,Stock,Mínimo\n"+items.map(i=>[i.name,i.cat,i.qty,i.min].map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+  dl("inventario.csv","text/csv;charset=utf-8",csv);
+});
+$("btnJson").addEventListener("click",()=>dl("inventario-respaldo.json","application/json",JSON.stringify(items,null,2)));
+$("btnImp").addEventListener("click",()=>$("fileImp").click());
+$("fileImp").addEventListener("change",async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    const arr=JSON.parse(await f.text());
+    if(!Array.isArray(arr))throw 0;
+    items=arr.filter(x=>x&&typeof x.name==="string").map(x=>({id:String(x.id||uid()),name:x.name,cat:String(x.cat||""),qty:Math.max(0,parseInt(x.qty)||0),min:Math.max(0,parseInt(x.min)||0)}));
+    persistLocal();render();$("note").textContent=`Importados ${items.length} ítems.`;
+  }catch(err){$("note").textContent="El archivo no es un respaldo válido."}
+  e.target.value="";
+});
+["q","fCat","fLow"].forEach(id=>$(id).addEventListener("input",render));
+
+loadLocal();
+$("status").textContent="Los datos se guardan en este navegador. Hacé respaldos con «Exportar respaldo (JSON)».";
+render();
+</script>
+</body>
+</html>
