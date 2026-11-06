@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Inventario · Neón</title>
+<title>Inventario de componentes</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔧</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
@@ -42,26 +42,11 @@ tr:last-child td{border-bottom:0}
 .empty{padding:24px;text-align:center;color:var(--mut)}
 #note{font-size:12px;color:var(--mut);margin-top:10px}
 
-:root:root:root{--bg:#06080f;--card:#0d1220;--tx:#dff4ff;--mut:#7f95b5;--bd:#1b2a4a;--ac:#00e5ff;--acx:#021014;--warn:#ffe14d;--warnbg:#2e2800;--bad:#ff4d8d;--badbg:#33091a;color-scheme:dark}
-body{font-family:ui-monospace,"Cascadia Mono","Courier New",monospace;background:linear-gradient(#00e5ff0a 1px,transparent 1px) 0 0/32px 32px,linear-gradient(90deg,#00e5ff0a 1px,transparent 1px) 0 0/32px 32px,radial-gradient(ellipse at 50% -10%,#ff2bd61f,transparent 55%),var(--bg)}
-h1{font-size:22px;color:var(--ac);text-shadow:0 0 10px #00e5ffaa,0 0 28px #00e5ff55}
-h1::before{content:"> ";color:#39ff88;text-shadow:0 0 10px #39ff88aa}
-h1::after{content:"_";color:#ff2bd6;text-shadow:0 0 10px #ff2bd6;animation:bl 1s steps(2) infinite}
-@keyframes bl{50%{opacity:0}}
-@media (prefers-reduced-motion:reduce){h1::after{animation:none}}
-.card,.stat,.wrap{border:1px solid #00e5ff66;border-radius:8px;box-shadow:0 0 14px #00e5ff22,inset 0 0 18px #00e5ff0d}
-.stat b{color:#39ff88;text-shadow:0 0 10px #39ff8888}
-.q{color:var(--ac);text-shadow:0 0 8px #00e5ff77}
-th{color:#ff2bd6;text-transform:uppercase;letter-spacing:.12em;border-bottom:1px solid #ff2bd666}
-td{border-bottom:1px solid #1b2a4a}
-tr:hover td{background:#00e5ff0d}
-input,select,button{background:#080c18;border:1px solid #00e5ff55;border-radius:6px}
-input:focus,select:focus,button:hover{outline:0;border-color:var(--ac);box-shadow:0 0 10px #00e5ff66}
-button.pri{background:var(--ac);color:var(--acx);border-color:var(--ac);box-shadow:0 0 14px #00e5ff88}
-button.out{color:var(--bad);border-color:#ff4d8d66}
-.tag{background:#0a1226;border:1px solid #1b2a4a;color:var(--mut)}
-.tag.low{background:var(--warnbg);color:var(--warn);border-color:var(--warn);box-shadow:0 0 8px #ffe14d44}
-.tag.zero{background:var(--badbg);color:var(--bad);border-color:var(--bad);box-shadow:0 0 8px #ff4d8d55}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:14px}
+.two .card{margin:0}
+.msg{font-size:12px;color:var(--mut);margin:8px 0 0;min-height:16px}
+[hidden]{display:none!important}
+#nCat{min-width:150px}
 </style>
 </head>
 <body>
@@ -76,16 +61,31 @@ button.out{color:var(--bad);border-color:#ff4d8d66}
 <div class="stat"><b id="sCero">0</b><span>Agotados</span></div>
 </div>
 
-<div class="card">
-<h2>Nuevo componente</h2>
-<form id="addForm">
-<input class="grow" id="nName" placeholder="Nombre (ej. Resistencia 10k)" required>
-<input id="nCat" list="cats" placeholder="Categoría" style="width:150px">
-<input id="nQty" type="number" min="0" value="1" title="Cantidad inicial">
-<input id="nMin" type="number" min="0" value="0" title="Stock mínimo (alerta)">
-<button class="pri" type="submit">Agregar ítem</button>
+<div class="two">
+<div class="card load">
+<h2>Cargar producto</h2>
+<form id="addForm" autocomplete="off">
+<input class="grow" id="nName" list="names" placeholder="Nombre (ej. Resistencia 10k)" required>
+<select id="nCat" title="Categoría"></select>
+<input id="nCatNew" placeholder="Nueva categoría" style="width:150px" hidden>
+<button type="button" id="nCatMk" hidden>Crear</button>
+<button type="button" id="nCatDel" class="out" hidden title="Quitar categoría sin ítems">Quitar</button>
+<input id="nQty" type="number" min="0" value="1" title="Cantidad a cargar">
+<input id="nMin" type="number" min="0" placeholder="Mín." title="Stock mínimo (opcional)">
+<button class="pri" type="submit">Cargar</button>
 </form>
-<datalist id="cats"></datalist>
+<p class="msg" id="addMsg">Si el nombre ya existe, se suma la cantidad al stock actual.</p>
+<datalist id="names"></datalist>
+</div>
+<div class="card use">
+<h2>Consumir producto</h2>
+<form id="useForm" autocomplete="off">
+<input class="grow" id="uName" list="names" placeholder="Elegí o escribí el componente" required>
+<input id="uQty" type="number" min="1" value="1" title="Cantidad a consumir">
+<button type="submit">Consumir</button>
+</form>
+<p class="msg" id="useMsg"></p>
+</div>
 </div>
 
 <div class="bar">
@@ -100,7 +100,7 @@ button.out{color:var(--bad);border-color:#ff4d8d66}
 </div>
 
 <div class="wrap"><table>
-<thead><tr><th>Componente</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Movimiento</th><th></th></tr></thead>
+<thead><tr><th>Componente</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th></th></tr></thead>
 <tbody id="rows"></tbody>
 </table></div>
 <p id="note"></p>
@@ -109,7 +109,8 @@ button.out{color:var(--bad);border-color:#ff4d8d66}
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let items=[],pendingDel=null;
+let items=[],customCats=[],pendingDel=null;
+const FIXED=["Consumible","Herramientas"],LSC="inv-categorias-v1";
 const LS="inv-componentes-v1";
 
 const SEED=[
@@ -118,24 +119,48 @@ const SEED=[
 ["Micrófono INMP441 I2S","Audio",1],["Micrófono GY-MAX4466 analógico","Audio",1],
 ["Amplificador MAX98357 I2S 3 W","Audio",1],["Parlante 8 Ω 0.5 W 40x4","Audio",1],["Parlante 29 mm (lote x2)","Audio",2],
 ["Display OLED 1.3\" 128x64","Display",1],
-["Diodos (kit 100)","Pasivos / discretos",100],["Transistores NPN (kit 2 x 180)","Pasivos / discretos",360],
-["Resistencias metal film (kit 300)","Pasivos / discretos",300],["Capacitores cerámicos (kit 250)","Pasivos / discretos",250],
-["Capacitores electrolíticos (kit 2 x 120)","Pasivos / discretos",240],
-["Termocontraíble (kit 127)","Insumos y herramientas",127],["Alicate de precisión","Insumos y herramientas",1],["Cinta doble faz 5 mm","Insumos y herramientas",1]
+["Diodos (kit 100)","Consumible",100],["Transistores NPN (kit 2 x 180)","Consumible",360],
+["Resistencias metal film (kit 300)","Consumible",300],["Capacitores cerámicos (kit 250)","Consumible",250],
+["Capacitores electrolíticos (kit 2 x 120)","Consumible",240],
+["Termocontraíble (kit 127)","Consumible",127],["Alicate de precisión","Herramientas",1],["Cinta doble faz 5 mm","Consumible",1]
 ];
 
 const uid=()=>"i"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
-function persistLocal(){try{localStorage.setItem(LS,JSON.stringify(items))}catch(e){}}
-function loadLocal(){try{items=JSON.parse(localStorage.getItem(LS)||"[]")}catch(e){items=[]}}
+function persistLocal(){try{localStorage.setItem(LS,JSON.stringify(items));localStorage.setItem(LSC,JSON.stringify(customCats))}catch(e){}}
+function loadLocal(){try{items=JSON.parse(localStorage.getItem(LS)||"[]")}catch(e){items=[]}try{customCats=JSON.parse(localStorage.getItem(LSC)||"[]")}catch(e){customCats=[]}}
 
 function save(it){const i=items.findIndex(x=>x.id===it.id);if(i<0)items.push(it);else items[i]=it;persistLocal();render()}
 function remove(id){items=items.filter(x=>x.id!==id);persistLocal();render()}
 
+function allCats(){
+  const seen=new Set(FIXED.map(c=>c.toLowerCase())),out=[...FIXED];
+  [...customCats,...items.map(i=>i.cat)].filter(Boolean).sort((a,b)=>a.localeCompare(b)).forEach(c=>{const k=c.toLowerCase();if(!seen.has(k)){seen.add(k);out.push(c)}});
+  return out;
+}
+function catUI(){
+  const v=$("nCat").value,isNew=v==="__new";
+  $("nCatNew").hidden=!isNew;$("nCatMk").hidden=!isNew;
+  $("nCatDel").hidden=!(!isNew&&!FIXED.includes(v)&&customCats.includes(v)&&!items.some(i=>i.cat===v));
+}
+function fillCat(){
+  const sel=$("nCat"),cur=sel.value||FIXED[0];
+  sel.innerHTML=allCats().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("")+'<option value="__new">+ Nueva categoría…</option>';
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:FIXED[0];
+  catUI();
+}
+function mkCat(){
+  const n=$("nCatNew").value.trim().replace(/\s+/g," ");
+  if(!n)return null;
+  const ex=allCats().find(c=>c.toLowerCase()===n.toLowerCase());
+  if(ex)return ex;
+  customCats.push(n);persistLocal();return n;
+}
 function render(){
   const q=$("q").value.trim().toLowerCase(),fc=$("fCat").value,fl=$("fLow").checked;
-  const cats=[...new Set(items.map(i=>i.cat).filter(Boolean))].sort();
-  $("cats").innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join("");
+  const cats=allCats();
+  $("names").innerHTML=[...new Set(items.map(i=>i.name))].sort().map(n=>`<option value="${esc(n)}">`).join("");
+  fillCat();
   const cur=$("fCat").value;
   $("fCat").innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option ${c===cur?"selected":""} value="${esc(c)}">${esc(c)}</option>`).join("");
   $("sTipos").textContent=items.length;
@@ -149,9 +174,8 @@ function render(){
     return `<tr data-id="${esc(i.id)}"><td>${esc(i.name)} ${tag}</td><td><span class="tag">${esc(i.cat||"—")}</span></td>
     <td class="q">${i.qty.toLocaleString("es-AR")}</td>
     <td><input class="min" type="number" min="0" value="${i.min}" data-a="min"></td>
-    <td><div class="act"><input type="number" min="1" value="1" data-n><button data-a="use">− Consumir</button><button data-a="add" class="pri">+ Agregar</button></div></td>
-    <td><button data-a="del" class="out">${pendingDel===i.id?"¿Seguro?":"Borrar"}</button></td></tr>`}).join("")
-    :`<tr><td colspan="6" class="empty">${items.length?"Sin resultados.":"Todavía no hay componentes. Agregá uno arriba o cargá la lista de tus carritos."}</td></tr>`;
+        <td><button data-a="del" class="out">${pendingDel===i.id?"¿Seguro?":"Borrar"}</button></td></tr>`}).join("")
+    :`<tr><td colspan="5" class="empty">${items.length?"Sin resultados.":"Todavía no hay componentes. Agregá uno arriba o cargá la lista de tus carritos."}</td></tr>`;
 }
 
 $("rows").addEventListener("click",e=>{
@@ -168,10 +192,48 @@ $("rows").addEventListener("change",e=>{
   const it=items.find(x=>x.id===e.target.closest("tr").dataset.id);
   if(it)save({...it,min:Math.max(0,parseInt(e.target.value)||0)});
 });
+const norm=t=>String(t).trim().toLowerCase().replace(/\s+/g," ");
+const find=n=>items.find(i=>norm(i.name)===norm(n));
+function info(){
+  const a=find($("nName").value),u=find($("uName").value);
+  if(a&&a.cat&&$("nCat").value!=="__new"&&[...$("nCat").options].some(o=>o.value===a.cat)){$("nCat").value=a.cat;catUI()}
+  if($("nName").value.trim())$("addMsg").textContent=a?`Ya existe: stock actual ${a.qty}. Se sumará lo que cargues.`:"Es un componente nuevo.";
+  $("useMsg").textContent=u?`Stock actual de «${u.name}»: ${u.qty}`:($("uName").value.trim()?"Ese componente no está en el inventario.":"");
+}
+$("nCat").addEventListener("change",()=>{catUI();if($("nCat").value==="__new")$("nCatNew").focus()});
+$("nCatMk").addEventListener("click",()=>{
+  const n=mkCat();if(!n){$("addMsg").textContent="Escribí el nombre de la nueva categoría.";return}
+  $("nCatNew").value="";fillCat();$("nCat").value=n;catUI();$("addMsg").textContent=`Categoría «${n}» creada.`;
+});
+$("nCatDel").addEventListener("click",()=>{
+  const v=$("nCat").value;customCats=customCats.filter(c=>c!==v);persistLocal();
+  $("nCat").value=FIXED[0];fillCat();$("addMsg").textContent=`Categoría «${v}» quitada.`;
+});
+$("nName").addEventListener("input",info);$("uName").addEventListener("input",info);
 $("addForm").addEventListener("submit",e=>{
   e.preventDefault();
-  save({id:uid(),name:$("nName").value.trim(),cat:$("nCat").value.trim(),qty:Math.max(0,parseInt($("nQty").value)||0),min:Math.max(0,parseInt($("nMin").value)||0)});
-  $("nName").value="";$("nQty").value=1;$("nName").focus();
+  const name=$("nName").value.trim().replace(/\s+/g," ");let cat=$("nCat").value;
+  const qty=Math.max(0,parseInt($("nQty").value)||0),minV=$("nMin").value.trim()===""?null:Math.max(0,parseInt($("nMin").value)||0);
+  if(cat==="__new"){cat=mkCat();if(!cat){$("addMsg").textContent="Escribí el nombre de la nueva categoría.";return}}
+  const it=find(name);
+  if(it){
+    save({...it,qty:it.qty+qty,cat,min:minV===null?it.min:minV});
+    $("addMsg").textContent=`«${it.name}» ya existía: stock ${it.qty} → ${it.qty+qty}.`;
+  }else{
+    save({id:uid(),name,cat,qty,min:minV===null?0:minV});
+    $("addMsg").textContent=`«${name}» cargado con ${qty} unidades.`;
+  }
+  if($("nCat").value==="__new")$("nCat").value=cat;
+  $("nCatNew").value="";catUI();$("nName").value="";$("nQty").value=1;$("nMin").value="";$("nName").focus();
+});
+$("useForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const it=find($("uName").value),n=Math.max(1,parseInt($("uQty").value)||1);
+  if(!it){$("useMsg").textContent="Ese componente no está en el inventario.";return}
+  if(n>it.qty){$("useMsg").textContent=`No alcanza: «${it.name}» tiene ${it.qty} y querés consumir ${n}.`;return}
+  save({...it,qty:it.qty-n});
+  $("useMsg").textContent=`Consumidos ${n} de «${it.name}». Quedan ${it.qty-n}.`;
+  $("uName").value="";$("uQty").value=1;$("uName").focus();
 });
 $("btnSeed").addEventListener("click",()=>{
   const have=new Set(items.map(i=>i.name.toLowerCase()));
@@ -183,13 +245,14 @@ $("btnCsv").addEventListener("click",()=>{
   const csv="\ufeffComponente,Categoría,Stock,Mínimo\n"+items.map(i=>[i.name,i.cat,i.qty,i.min].map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
   dl("inventario.csv","text/csv;charset=utf-8",csv);
 });
-$("btnJson").addEventListener("click",()=>dl("inventario-respaldo.json","application/json",JSON.stringify(items,null,2)));
+$("btnJson").addEventListener("click",()=>dl("inventario-respaldo.json","application/json",JSON.stringify({version:2,items,categorias:customCats},null,2)));
 $("btnImp").addEventListener("click",()=>$("fileImp").click());
 $("fileImp").addEventListener("change",async e=>{
   const f=e.target.files[0];if(!f)return;
   try{
-    const arr=JSON.parse(await f.text());
+    const raw=JSON.parse(await f.text()),arr=Array.isArray(raw)?raw:raw.items;
     if(!Array.isArray(arr))throw 0;
+    if(Array.isArray(raw.categorias))customCats=raw.categorias.filter(c=>typeof c==="string");
     items=arr.filter(x=>x&&typeof x.name==="string").map(x=>({id:String(x.id||uid()),name:x.name,cat:String(x.cat||""),qty:Math.max(0,parseInt(x.qty)||0),min:Math.max(0,parseInt(x.min)||0)}));
     persistLocal();render();$("note").textContent=`Importados ${items.length} ítems.`;
   }catch(err){$("note").textContent="El archivo no es un respaldo válido."}
